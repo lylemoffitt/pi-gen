@@ -1,0 +1,70 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:          nvme2fs_once
+# Required-Start:
+# Required-Stop:
+# Default-Start: 3
+# Default-Stop:
+# Short-Description: Add mount point for NVME
+# Description:
+### END INIT INFO
+. /lib/lsb/init-functions
+set -o pipefail
+set -o errexit
+
+# REF: https://wiki.52pi.com/index.php?title=EP-0240
+
+find_nvme(){
+  NVME_PCI=$(lspci | grep -c -i NVMe)
+  log_daemon_msg "Found new PCI: ${NVME_PCI}"
+}
+
+part_nvme(){
+  NEW_DEV=$(lsblk -J -p -o NAME,UUID,TYPE /dev/nvme*n* | jq -r '.[][] | select(.type=="disk") | select(.children|length <=1) | .name')
+  log_daemon_msg "Parting NVME ext4 : ${NEW_DEV}"
+  parted "${NEW_DEV}" mklabel gpt &&
+  parted -a opt "${NEW_DEV}" mkpart primary ext4 0% 100%
+}
+
+format_nvme(){
+  NEW_PART=$(lsblk -J -p -o NAME,PTUUID,TYPE /dev/nvme*n* | jq -r '.[][] | select(.type=="disk") | select(.children|length <=1) | .children[0].name')
+
+  log_daemon_msg "Formatting NVME ext4 : ${NEW_PART}"
+  test -b "${NEW_PART}" && 
+  mkfs.ext4 "${NEW_PART}"
+}
+
+mount_nvme(){
+  NEW_PART=$(lsblk -J -p -o NAME,PTUUID,TYPE /dev/nvme*n* | jq -r '.[][] | select(.type=="disk") | select(.children|length <=1) | .children[0].name')
+
+  log_daemon_msg "Mounting NVME ext4 : ${NEW_PART}"
+  test -b "${NEW_PART}" && 
+  mkdir /mnt/drive &&
+  mount "${NEW_PART}" /mnt/drive -t ext4
+}
+
+fstab_nvme(){
+  NEW_UUID=$(lsblk -J -p -o NAME,UUID,TYPE /dev/nvme*n* | jq -r '.[][] | select(.type=="disk") | select(.children|length <=1) | .children[0].uuid')
+
+  log_daemon_msg "Save fstab NVME : ${NEW_UUID}"
+  test -n "${NEW_UUID}" && 
+  echo "UUID=${NEW_UUID}  /mnt/drive  ext4  0  0" >/etc/fstab 
+}
+
+case "$1" in
+  start)
+    log_daemon_msg "Starting nvme2fs_once"
+    find_nvme && 
+    part_nvme &&
+    format_nvme &&
+    mount_nvme &&
+    fstab_nvme &&
+    update-rc.d nvme2fs_once remove &&
+    rm /etc/init.d/nvme2fs_once &&
+    log_end_msg $?
+    ;;
+  *)
+    echo "Usage: $0 start" >&2
+    exit 3
+    ;;
+esac

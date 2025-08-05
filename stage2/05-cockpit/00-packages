@@ -1,0 +1,15 @@
+podman
+coreutils
+nfs-kernel-server
+samba-common-bin
+coreutils
+attr
+findutils
+hostname
+lm-sensors
+cockpit 
+cockpit-storaged
+cockpit-networkmanager
+cockpit-packagekit
+cockpit-podman
+cockpit-machines

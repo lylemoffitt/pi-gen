@@ -1,0 +1,6 @@
+services:
+  counter:
+    build: .
+    ports:
+      - "31415:31415"
+    

@@ -81,3 +81,10 @@ otg_mode=1
 arm_boost=1
 
 [all]
+
+# Add support for NVME hat
+#dtparam=nvme
+#dtparam=pciex1
+
+# Optionally, control the PCIe lane speed (gen3), but may be unstable
+# dtparam=pciex1_gen=3

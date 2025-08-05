@@ -50,8 +50,8 @@ if [ "${NO_PRERUN_QCOW2}" = "0" ]; then
 	BOOT_DEV="${LOOP_DEV}p1"
 	ROOT_DEV="${LOOP_DEV}p2"
 
-	ROOT_FEATURES="^huge_file,^orphan_file"
-	for FEATURE in 64bit; do
+	ROOT_FEATURES="^huge_file"
+	for FEATURE in 64bit orphan_file; do
 	if grep -q "$FEATURE" /etc/mke2fs.conf; then
 		ROOT_FEATURES="^$FEATURE,$ROOT_FEATURES"
 	fi
